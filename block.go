@@ -18,6 +18,8 @@ type Block struct {
 
 	//当前区块的hash，也是下一个区块的PrevBlockHash
 	Hash []byte
+
+	Nonce int
 }
 
 func (b *Block) SetHash() {
@@ -31,9 +33,12 @@ func (b *Block) SetHash() {
 	b.Hash = hash[:]
 }
 
-func NewBlock(data string, prevVlockHash []byte) *Block {
-	block := &Block{time.Now().Unix(), []byte(data), prevVlockHash, []byte{}}
-	block.SetHash()
+func NewBlock(data string, prevlockHash []byte) *Block {
+	block := &Block{time.Now().Unix(), []byte(data), prevlockHash, []byte{}, 0}
+	pow := NewProofWork(block)
+	nonce, hash := pow.Run()
+	block.Hash = hash[:]
+	block.Nonce = nonce
 	return block
 }
 
