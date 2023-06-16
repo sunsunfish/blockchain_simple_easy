@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/gob"
 	"strconv"
 	"time"
 )
@@ -22,6 +23,24 @@ type Block struct {
 	Nonce int
 }
 
+// Serialize 序列化整个区块
+func (block *Block) Serialize() []byte {
+	var result bytes.Buffer
+
+	encoder := gob.NewEncoder(&result)
+
+	encoder.Encode(block)
+
+	return result.Bytes()
+}
+
+func DeserializeBlock(d []byte) *Block {
+	var block Block
+	decoder := gob.NewDecoder(bytes.NewReader(d))
+	decoder.Decode(&block)
+	return &block
+}
+
 func (b *Block) SetHash() {
 	//把时间戳转化为10进制字符串，然后再转化为字节数组
 	//用不同进制转化时间戳，字符长度会不一样，在需要高效率的哈希计算场景下，较短的字符串可以减少计算时间。而在需要更直观可读的场景下，则可以使用较长的字符串
@@ -35,7 +54,7 @@ func (b *Block) SetHash() {
 
 func NewBlock(data string, prevlockHash []byte) *Block {
 	block := &Block{time.Now().Unix(), []byte(data), prevlockHash, []byte{}, 0}
-	pow := NewProofWork(block)
+	pow := NewProofOfWork(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash[:]
 	block.Nonce = nonce

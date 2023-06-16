@@ -19,7 +19,7 @@ type ProofOfWork struct {
 	target *big.Int
 }
 
-func NewProofWork(b *Block) *ProofOfWork {
+func NewProofOfWork(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-targetBits))
 	pow := &ProofOfWork{b, target}
