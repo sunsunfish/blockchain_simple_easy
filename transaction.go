@@ -122,7 +122,6 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return txCopy
 }
 
-// DeserializeTransaction deserializes a transaction
 func DeserializeTransaction(data []byte) Transaction {
 	var transaction Transaction
 
@@ -135,7 +134,6 @@ func DeserializeTransaction(data []byte) Transaction {
 	return transaction
 }
 
-// Serialize returns a serialized Transaction
 func (tx Transaction) Serialize() []byte {
 	var encoded bytes.Buffer
 
