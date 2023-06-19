@@ -1,12 +1,10 @@
 package main
 
 import (
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 )
 
 type CLI struct {
@@ -17,11 +15,13 @@ func (cli *CLI) Run() {
 
 	cli.validateArgs()
 
-	createWalletCmd := flag.NewFlagSet("createwallet", flag.ExitOnError)
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
 	createBlockchainCmd := flag.NewFlagSet("createblockchain", flag.ExitOnError)
-	sendCmd := flag.NewFlagSet("send", flag.ExitOnError)
+	createWalletCmd := flag.NewFlagSet("createwallet", flag.ExitOnError)
+	listAddressesCmd := flag.NewFlagSet("listaddresses", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
+	reindexUTXOCmd := flag.NewFlagSet("reindexutxo", flag.ExitOnError)
+	sendCmd := flag.NewFlagSet("send", flag.ExitOnError)
 
 	getBalanceAddress := getBalanceCmd.String("address", "", "The address to get balance for")
 	createBlockchainAddress := createBlockchainCmd.String("address", "", "The address to send genesis block reward to")
@@ -52,6 +52,17 @@ func (cli *CLI) Run() {
 		}
 	case "createwallet":
 		err := createWalletCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+	case "listaddresses":
+		err := listAddressesCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+
+	case "reindexutxo":
+		err := reindexUTXOCmd.Parse(os.Args[2:])
 		if err != nil {
 			log.Panic(err)
 		}
@@ -92,38 +103,13 @@ func (cli *CLI) Run() {
 	if createWalletCmd.Parsed() {
 		cli.createWallet()
 	}
-}
 
-func (cli *CLI) printChain() {
+	if listAddressesCmd.Parsed() {
+		cli.listAddresses()
+	}
 
-	bc := NewBlockchain("")
-	defer bc.db.Close()
-
-	bci := bc.Iterator()
-
-	for {
-		block := bci.Next()
-
-		fmt.Printf("Prev. hash: %x\n", block.PrevBlockHash)
-		fmt.Printf("Hash: %x\n", block.Hash)
-		pow := NewProofOfWork(block)
-		for _, transaction := range block.Transactions {
-			fmt.Printf("transaction: %s\n", hex.EncodeToString(transaction.ID))
-
-			for _, input := range transaction.Vin {
-				fmt.Printf("Vin: %s\n", hex.EncodeToString(input.Txid))
-			}
-
-			//for _, out := range transaction.Vout {
-			//	fmt.Printf("Vout: address:%s  value:%d\n", out.ScriptPubKey, out.Value)
-			//}
-		}
-		fmt.Printf("PoW: %s nonce: %d \n", strconv.FormatBool(pow.Validate()), block.Nonce)
-		fmt.Println()
-
-		if len(block.PrevBlockHash) == 0 {
-			break
-		}
+	if reindexUTXOCmd.Parsed() {
+		cli.reindexUTXO()
 	}
 }
 

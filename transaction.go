@@ -37,26 +37,24 @@ func (tx *Transaction) SetID() {
 
 func NewCoinbaseTX(to, data string) *Transaction {
 	if data == "" {
-		data = fmt.Sprintf("Reward to '%s'", to)
+		randData := make([]byte, 20)
+		_, err := rand.Read(randData)
+		if err != nil {
+			log.Panic(err)
+		}
+		data = fmt.Sprintf("%x", randData)
 	}
+
 	txin := TXInput{[]byte{}, -1, nil, []byte(data)}
 	txout := NewTXOutput(subsidy, to)
 	tx := Transaction{nil, []TXInput{txin}, []TXOutput{*txout}}
-	tx.SetID()
+	tx.ID = tx.Hash()
 
 	return &tx
 }
 
-func (in *TXInput) CanUnlockOutputWith(unlockingData string) bool {
-	return true
-}
-
-func (out *TXOutput) CanBeUnlockedWith(unlockingData string) bool {
-	return true
-}
-
 // 交易
-func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *Transaction {
+func NewUTXOTransaction(from, to string, amount int, UTXOSet *UTXOSet) *Transaction {
 	var inputs []TXInput
 	var outputs []TXOutput
 
@@ -67,7 +65,7 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *Transactio
 
 	wallet := wallets.GetWallet(from)
 	pubKeyHash := HashPubKey(wallet.PublicKey)
-	acc, validOutputs := bc.FindSpendableOutputs(pubKeyHash, amount)
+	acc, validOutputs := UTXOSet.FindSpendableOutputs(pubKeyHash, amount)
 
 	if acc < amount {
 		log.Panic("ERROR: Not enough funds")
@@ -95,7 +93,7 @@ func NewUTXOTransaction(from, to string, amount int, bc *Blockchain) *Transactio
 
 	tx := Transaction{nil, inputs, outputs}
 	tx.ID = tx.Hash()
-	bc.SignTransaction(&tx, wallet.PrivateKey)
+	UTXOSet.Blockchain.SignTransaction(&tx, wallet.PrivateKey)
 	return &tx
 }
 
@@ -120,18 +118,6 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	txCopy := Transaction{tx.ID, inputs, outputs}
 
 	return txCopy
-}
-
-func DeserializeTransaction(data []byte) Transaction {
-	var transaction Transaction
-
-	decoder := gob.NewDecoder(bytes.NewReader(data))
-	err := decoder.Decode(&transaction)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return transaction
 }
 
 func (tx Transaction) Serialize() []byte {
