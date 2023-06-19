@@ -51,15 +51,19 @@ func DeserializeBlock(d []byte) *Block {
 //	b.Hash = hash[:]
 //}
 
-func NewBlock(transactions []*Transaction, prevlockHash []byte) *Block {
-	block := &Block{time.Now().Unix(), transactions, prevlockHash, []byte{}, 0}
+// NewBlock 生成新的区块
+func NewBlock(transactions []*Transaction, prevBlockHash []byte) *Block {
+	block := &Block{time.Now().Unix(), transactions, prevBlockHash, []byte{}, 0}
 	pow := NewProofOfWork(block)
 	nonce, hash := pow.Run()
+
 	block.Hash = hash[:]
 	block.Nonce = nonce
+
 	return block
 }
 
+// NewGenesisBlock 创世区块
 func NewGenesisBlock(coinbase *Transaction) *Block {
 	return NewBlock([]*Transaction{coinbase}, []byte{})
 }
